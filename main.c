@@ -17,39 +17,41 @@ void parse(DIR *dirp, char* path ,int nr_tabs){
         return;
     }
     else{
-        char *init_path = malloc((strlen(path)+3) * sizeof(char));
-        strcat(path,"/");
-        strcpy(init_path,path);
-        path = realloc(path , (strlen(path) + strlen(r->d_name) + 1)*sizeof(char));
-        strcat(path,r->d_name);
+        // char *init_path = malloc((strlen(path)+3) * sizeof(char));
+        // strcat(path,"/");
+        // strcpy(init_path,path);
+        // path = realloc(path , (strlen(path) + strlen(r->d_name) + 1)*sizeof(char));
+        // strcat(path,r->d_name);
 
         int result = stat(path , st);
         for(int i=0;i<=nr_tabs;i++)
             printf("  ");
         printf("%s\n" ,r->d_name);
         if(S_ISDIR(st->st_mode) && strcmp(r->d_name,".") && strcmp(r->d_name,"..") ){
-            DIR *new_dir = opendir(path);
+            char *new_path = malloc((strlen(path)+strlen(r->d_name)+2)*sizeof(char));
+            sprintf(new_path,"%s%s/",path,r->d_name);
+            DIR *new_dir = opendir(new_path);
             if(new_dir != NULL){
                 parse(new_dir,path,nr_tabs+1);
                 closedir(new_dir);
             }
         }
-        parse(dirp,init_path,nr_tabs);
+        parse(dirp,path,nr_tabs);
     }
 }
 
 int main(int argc , char **argv){
-    // if(argc != 2){
-    //     return 0;
-    // }
-    char *path = strdup("/home/mihai/Desktop/");
-    DIR *dirp = opendir(path);
+    if(argc != 2){
+        return 0;
+    }
+    // char *path = strdup("/home/mihai/Desktop/");
+    DIR *dirp = opendir(argv[1]);
 
     if(dirp == NULL){
         perror("un merge");
         exit(1);
     }
-    parse(dirp,path,0);
+    parse(dirp,argv[1],0);
     closedir(dirp);
     return 0;
 }
