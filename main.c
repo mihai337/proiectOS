@@ -44,42 +44,6 @@ void parse(DIR *dirp,char *path,int level){
     }
 }
 
-// void parse(DIR *dirp, char *dirname, int file_count) {
-//     struct dirent *entry;
-//     struct stat statbuf;
-//     char path[5000];
-
-//     while ((entry = readdir(dirp)) != NULL) {
-//         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-//             continue;
-        
-//         snprintf(path, sizeof(path), "%s/%s", dirname, entry->d_name);
-
-//         if (lstat(path, &statbuf) == -1) {
-//             perror("lstat");
-//             continue;
-//         }
-
-//         // Populate file_info struct with information about the file
-//         strncpy(file[file_count].name, entry->d_name, sizeof(file[file_count].name));
-//         file[file_count].size = statbuf.st_size;
-//         strcpy(file[file_count].location, path);
-//         file[file_count].inode = statbuf.st_ino;
-//         file[file_count].last_modified = statbuf.st_mtime;
-
-//         // Increment file count
-//         file_count++;
-
-//         // Process file or directory
-//         if (S_ISDIR(statbuf.st_mode)) {
-//             DIR *subdir = opendir(path);
-//             if (subdir != NULL) {
-//                 parse(subdir, path, file_count);
-//                 closedir(subdir);
-//             }
-//         }
-//     }
-// }
 
 void create_snapshot(){
     //copy child process
