@@ -9,49 +9,173 @@
 #include <stdlib.h>
 #include <time.h>
 
+#define NEW 0
+#define DELETED 1
+#define MODIFIED 2
+#define UNCHANGED 3
+
 struct Snapshot{
     char name[256];
     int size;
     char location[300];
     ino_t inode;
     time_t last_modified;
+    int tag;
+
 }file[1000];
 
 
-void parse(DIR *dirp,char *path,int level){
-    struct dirent *dp;
-    struct stat buf;
-    char *new_path = (char *)malloc(5000);
-    while((dp = readdir(dirp)) != NULL){
-        if(strcmp(dp->d_name,".") == 0 || strcmp(dp->d_name,"..") == 0){
+void traverse_directory(const char *path , int* count) {
+    DIR *dir;
+    struct dirent *entry;
+    struct stat statbuf;
+
+    // Open directory
+    if ((dir = opendir(path)) == NULL) {
+        perror("Error opening directory");
+        return;
+    }
+
+    // Traverse directory
+    while ((entry = readdir(dir)) != NULL) {
+        char full_path[1024];
+        snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+
+        // Skip "." and ".."
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+            continue;
+
+        // Get file information
+        if (stat(full_path, &statbuf) == -1) {
+            perror("Error getting file status");
             continue;
         }
-        strcpy(new_path,path);
-        strcat(new_path,dp->d_name);
-        stat(new_path,&buf);
-        strcpy(file[level].name,dp->d_name);
-        file[level].size = buf.st_size;
-        strcpy(file[level].location,new_path);
-        file[level].inode = buf.st_ino;
-        file[level].last_modified = buf.st_mtime;
-        level++;
-        if(S_ISDIR(buf.st_mode)){
-            strcat(new_path,"/");
-            DIR *new_dir = opendir(new_path);
-            parse(new_dir,new_path,level);
-            closedir(new_dir);
+
+        // Save file information
+        strcpy(file[*count].name,entry->d_name);
+        file[*count].size = statbuf.st_size;
+        strcpy(file[*count].location,full_path);
+        file[*count].inode = statbuf.st_ino;
+        file[*count].last_modified = statbuf.st_mtime;
+        (*count)++;
+
+        // If directory, recursively traverse
+        if (S_ISDIR(statbuf.st_mode)){
+            // printf("Directory: %s\n", full_path);
+            traverse_directory(full_path,count);
         }
+        else{
+            // printf("File: %s\n", full_path);
+        }
+        
     }
+
+    // Close directory
+    closedir(dir);
+}
+
+int search_snapfile(char* path){
+    char* snap_location = (char *)malloc(5000);
+    strcpy(snap_location,path);
+    strcat(snap_location,"/snapshot.txt");
+    FILE *f = fopen(snap_location,"r");
+    if(f == NULL){
+        return 0;
+    }
+    fclose(f);
+    free(snap_location);
+    return 1;
+
 }
 
 
-void create_snapshot(){
-    //copy child process
+void new_snapshot(char* path){
+    char* snap_location = (char *)malloc(5000);
+    strcpy(snap_location,path);
+    strcat(snap_location,"/snapshot.txt");
+    FILE *f = fopen(snap_location,"w");
+
+    if(f == NULL){
+        perror("fopen error");
+        exit(1);
+    }
+
+    for(int j=0;j<1000;j++){
+        if(file[j].size == -1){
+            break;
+        }
+        fprintf(f,"%s %d %ld %ld %d\n",file[j].location,file[j].size,file[j].inode,file[j].last_modified , file[j].tag);
+    }
+    fclose(f);
+    free(snap_location);
+}
+
+void compare_snapshot(char* path){
+    char* snap_location = (char *)malloc(5000);
+    strcpy(snap_location,path);
+    strcat(snap_location,"/snapshot.txt");
+    FILE *f = fopen(snap_location,"r");
+
+    if(f == NULL){
+        perror("fopen error");
+        exit(1);
+    }
+
+    char location[300];
+    int size;
+    ino_t inode;
+    time_t last_modified;
+    int tag;
+    int found = 0;
+
+    while(fscanf(f,"%s %d %ld %ld %d",location,&size,&inode,&last_modified,&tag)){
+        found = 0;
+        
+        if(tag == DELETED){
+            continue;
+        }
+
+        for(int i=0;i<1000;i++){
+            if(file[i].size == -1){
+                break;
+            }
+
+            if(inode == file[i].inode){
+                found = 1;
+                if(file[i].last_modified != last_modified){
+                    file[i].tag = MODIFIED;
+                }
+                else{
+                    file[i].tag = UNCHANGED;
+                }
+                break;
+            }
+        }
+        if(!found){
+            fprintf(f,"%s %d %ld %ld %d\n",location,size,inode,last_modified , DELETED);
+        }
+    }
+    fclose(f);
+    free(snap_location);
+}
+
+void child_process(char *path){
+
+    int count=0;
+    traverse_directory(path,&count);
+    //save snapshot
+    if(search_snapfile(path) == 0){
+        new_snapshot(path);
+    }
+    else{
+        compare_snapshot(path);
+    }
+    exit(0);
 }
 
 int main(int argc , char **argv){
     int i;
-    if(argc < 2){
+    if(argc < 2 || argc > 11){
         return 0;
     }
 
@@ -59,54 +183,22 @@ int main(int argc , char **argv){
         file[i].size = -1;
     }
     
-    int child_index = 0;
     for(i=1;i<argc;i++){
-        child_index++;
         pid_t pid = fork();
         if(pid == -1){
             perror("fork error");
             exit(1);
         }
-        else if(pid == 0){
-            //child process
-            DIR *dirp = opendir(argv[i]);
-
-            if(dirp == NULL){
-                perror("opendir error");
-                exit(1);
-            }
-
-            parse(dirp,argv[i],0);
-            closedir(dirp);
-            printf("%s\n",argv[i]);
-            //save snapshot
-            char* snap_location = (char *)malloc(5000);
-            strcpy(snap_location,argv[i]);
-            strcat(snap_location,"snapshot.txt");
-            FILE *f = fopen(snap_location,"w");
-
-            if(f == NULL){
-                perror("fopen error");
-                exit(1);
-            }
-
-            for(int j=0;j<1000;j++){
-                // if(file[j].size == -1){
-                //     break;
-                // }
-                fprintf(f,"%s %d %s %ld %ld\n",file[j].name,file[j].size,file[j].location,file[j].inode,file[j].last_modified);
-            }
-            fclose(f);
-            free(snap_location);
-            exit(0);
-            // wait(NULL);
-            }
+        else{
+            if(pid == 0)
+                // child_process(argv[i]);
+                printf("%d",search_snapfile(argv[i]));         
+        }
     }
 
     for(i=1;i<argc;i++){
         wait(NULL);
     }
     
-
     return 0;
 }

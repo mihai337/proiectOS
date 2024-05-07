@@ -1,0 +1,16 @@
+.gitignore 27 /home/mihai/Desktop/labOS/proiectOS/.gitignore 2894508 1712202354
+a.out 17024 /home/mihai/Desktop/labOS/proiectOS/a.out 2888268 1715101853
+snapshot.txt 0 /home/mihai/Desktop/labOS/proiectOS/snapshot.txt 2890889 1715101626
+main.c 3783 /home/mihai/Desktop/labOS/proiectOS/main.c 2893607 1715101796
+build 4096 /home/mihai/Desktop/labOS/proiectOS/build 2894344 1712202304
+.git 4096 /home/mihai/Desktop/labOS/proiectOS/.git 2892575 1713232476
+main 21904 /home/mihai/Desktop/labOS/proiectOS/main 2893280 1713228650
+.vscode 4096 /home/mihai/Desktop/labOS/proiectOS/.vscode 2892814 1712203347
+tasks.json 733 /home/mihai/Desktop/labOS/proiectOS/.vscode/tasks.json 2894017 1712203347
+launch.json 1817 /home/mihai/Desktop/labOS/proiectOS/.vscode/launch.json 2892816 1713228734
+settings.json 1364 /home/mihai/Desktop/labOS/proiectOS/.vscode/settings.json 2892815 1713229062
+c_cpp_properties.json 344 /home/mihai/Desktop/labOS/proiectOS/.vscode/c_cpp_properties.json 2892817 1711680712
+FETCH_HEAD 97 /home/mihai/Desktop/labOS/proiectOS/.git/FETCH_HEAD 2892576 1715101835
+config 262 /home/mihai/Desktop/labOS/proiectOS/.git/config 2893438 1711449422
+info 4096 /home/mihai/Desktop/labOS/proiectOS/.git/info 2892595 1711449421
+packed
