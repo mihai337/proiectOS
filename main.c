@@ -110,6 +110,18 @@ void new_snapshot(char* path){
     free(snap_location);
 }
 
+int snap_size(){
+    int count = 0;
+    for(int i=0;i<1000;i++){
+        if(file[i].size == -1){
+            break;
+        }
+        count++;
+    }
+    return count;
+
+}
+
 void compare_snapshot(char* path){
     char* snap_location = (char *)malloc(5000);
     strcpy(snap_location,path);
@@ -128,9 +140,9 @@ void compare_snapshot(char* path){
     int tag;
     int found = 0;
 
-    while(fscanf(f,"%s %d %ld %ld %d",location,&size,&inode,&last_modified,&tag)){
+    while(fscanf(f,"%s %d %ld %ld %d",location,&size,&inode,&last_modified,&tag) != EOF){
         found = 0;
-        
+
         if(tag == DELETED){
             continue;
         }
@@ -141,20 +153,34 @@ void compare_snapshot(char* path){
             }
 
             if(inode == file[i].inode){
+                if(file[i].inode == 2894268)
+                    printf("\n\n%s %ld %ld\n",file[i].location , file[i].last_modified , last_modified);
                 found = 1;
                 if(file[i].last_modified != last_modified){
                     file[i].tag = MODIFIED;
+                    printf("%s %d %ld %ld %d\n",file[i].location,file[i].size,file[i].inode,file[i].last_modified , file[i].tag);
                 }
                 else{
                     file[i].tag = UNCHANGED;
                 }
                 break;
             }
+
         }
+
         if(!found){
-            fprintf(f,"%s %d %ld %ld %d\n",location,size,inode,last_modified , DELETED);
+            printf("test\n");
+            // fprintf(f,"%s %d %ld %ld %d\n",location,size,inode,last_modified , DELETED); //doesn't work, file opened as read only
+            int s = snap_size();
+            // strcpy(file[s].name,location);
+            file[s].size = size;
+            strcpy(file[s].location,location);
+            file[s].inode = inode;
+            file[s].last_modified = last_modified;
+            file[s].tag = DELETED;
         }
     }
+    new_snapshot(path);
     fclose(f);
     free(snap_location);
 }
@@ -191,8 +217,8 @@ int main(int argc , char **argv){
         }
         else{
             if(pid == 0)
-                // child_process(argv[i]);
-                printf("%d",search_snapfile(argv[i]));         
+                child_process(argv[i]);
+                // printf("%d",search_snapfile(argv[i]));         
         }
     }
 
