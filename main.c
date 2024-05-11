@@ -46,6 +46,11 @@ void traverse_directory(const char *path , int* count) {
     DIR *dir;
     struct dirent *entry;
     struct stat statbuf;
+
+    if(*count > 1000){
+        perror("too many files");
+        exit(1);
+    }
     
     if ((dir = opendir(path)) == NULL) {
         perror("Error opening directory");
@@ -220,7 +225,7 @@ void child_process(char *path){
 
     int count=0;
     traverse_directory(path,&count);
-    //save snapshot
+    
     if(search_snapfile(path) == 0){
         new_snapshot(path);
     }
